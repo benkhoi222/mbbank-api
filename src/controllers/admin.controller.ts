@@ -19,7 +19,7 @@ interface UserInput {
 
 export class AdminController {
   // Lấy tất cả tài khoản MB Bank (chỉ admin)
-  static async getAllMBAccounts(req: Request, res: Response): Promise<Response | void> {
+  static async getAllMBAccounts(req: Request, res: Response): Promise<void> {
     try {
       // Kiểm tra quyền admin
       if (!req.user || req.user.role !== 'admin') {
@@ -47,7 +47,7 @@ export class AdminController {
   }
 
   // Kiểm tra trạng thái đăng nhập của tất cả tài khoản (chỉ admin)
-  static async checkAllAccountsStatus(req: Request, res: Response): Promise<Response | void> {
+  static async checkAllAccountsStatus(req: Request, res: Response): Promise<void> {
     try {
       // Kiểm tra quyền admin
       if (!req.user || req.user.role !== 'admin') {
@@ -94,7 +94,7 @@ export class AdminController {
   }
 
   // Kiểm tra số dư của tất cả tài khoản (chỉ admin)
-  static async checkAllAccountsBalance(req: Request, res: Response): Promise<Response | void> {
+  static async checkAllAccountsBalance(req: Request, res: Response): Promise<void> {
     try {
       // Kiểm tra quyền admin
       if (!req.user || req.user.role !== 'admin') {
@@ -141,79 +141,84 @@ export class AdminController {
 
   // Placeholder signatures for methods mentioned in original tsc errors
   // Ensure these also have the correct return type
-  static async getAllUsers(req: Request, res: Response): Promise<Response | void> {
+  static async getAllUsers(req: Request, res: Response): Promise<void> {
     // TODO: Implement
-    return res.status(501).json({ message: 'Not implemented' });
+    res.status(501).json({ message: 'Not implemented' });
   }
 
-  static async getUserById(req: Request, res: Response): Promise<Response | void> {
+  static async getUserById(req: Request, res: Response): Promise<void> {
     // TODO: Implement
-    return res.status(501).json({ message: 'Not implemented' });
+    res.status(501).json({ message: 'Not implemented' });
   }
 
-  static async updateUser(req: Request, res: Response): Promise<Response | void> {
+  static async updateUser(req: Request, res: Response): Promise<void> {
     // TODO: Implement
-    return res.status(501).json({ message: 'Not implemented' });
+    res.status(501).json({ message: 'Not implemented' });
   }
 
-  static async deleteUser(req: Request, res: Response): Promise<Response | void> {
+  static async deleteUser(req: Request, res: Response): Promise<void> {
     // TODO: Implement
-    return res.status(501).json({ message: 'Not implemented' });
+    res.status(501).json({ message: 'Not implemented' });
   }
 
-  static async searchUsers(req: Request, res: Response): Promise<Response | void> {
+  static async searchUsers(req: Request, res: Response): Promise<void> {
     // TODO: Implement
-    return res.status(501).json({ message: 'Not implemented' });
+    res.status(501).json({ message: 'Not implemented' });
   }
 
   // Tạo tài khoản admin đầu tiên (chỉ khi chưa có admin nào)
-  static async createFirstAdmin(req: Request, res: Response): Promise<Response | void> {
+  static async createFirstAdmin(req: Request, res: Response): Promise<void> {
     try {
       // Kiểm tra xem đã có admin nào chưa
       const hasAdmin = await UserModel.hasAdminUser();
       
       if (hasAdmin) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           message: 'Đã tồn tại tài khoản admin trong hệ thống'
         });
+        return;
       }
       
       const { username, password, name, email } = req.body;
       
       // Kiểm tra dữ liệu đầu vào
       if (!username || !password || !email) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: 'Tên đăng nhập, mật khẩu và email là bắt buộc'
         });
+        return;
       }
       
       // Kiểm tra email hợp lệ
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: 'Email không hợp lệ'
         });
+        return;
       }
       
       // Kiểm tra người dùng đã tồn tại chưa
       const existingUser = await UserModel.getUserByUsername(username);
       if (existingUser) {
-        return res.status(409).json({
+        res.status(409).json({
           success: false,
           message: 'Tên đăng nhập đã tồn tại'
         });
+        return;
       }
       
       // Kiểm tra email đã tồn tại chưa
       const existingEmail = await UserModel.getUserByEmail(email);
       if (existingEmail) {
-        return res.status(409).json({
+        res.status(409).json({
           success: false,
           message: 'Email đã được sử dụng'
         });
+        return;
       }
       
       // Mã hóa mật khẩu
@@ -241,7 +246,7 @@ export class AdminController {
       // Loại bỏ mật khẩu trước khi trả về
       const { password: _, ...userData } = newUser;
       
-      return res.status(201).json({
+      res.status(201).json({
         success: true,
         message: 'Tạo tài khoản admin đầu tiên thành công',
         data: { 
@@ -256,7 +261,7 @@ export class AdminController {
         }
       });
     } catch (error: any) {
-      return res.status(error.statusCode || 500).json({
+      res.status(error.statusCode || 500).json({
         success: false,
         message: error.message || 'Lỗi khi tạo tài khoản admin'
       });
