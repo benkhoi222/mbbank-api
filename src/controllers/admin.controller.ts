@@ -4,13 +4,14 @@ import { UserModel } from '../models/user.model';
 import { MBBankService } from '../services/mbbank.service';
 import { NotFoundError, UnauthorizedError } from '../utils/error.utils';
 
+// Define the expected input structure based on usage and errors
 type UserRole = 'admin' | 'user';
 type UserStatus = 'active' | 'inactive' | 'locked';
 interface UserInput {
   username: string;
-  password?: string; // Password might not always be needed as input directly
-  name?: string;
-  email?: string;
+  password: string; // Make password required as expected by createUser
+  name?: string;     // Keep optional if DB allows null/undefined or has default
+  email: string;     // Assume email is required based on usage
   role: UserRole;
   status: UserStatus;
   token: string;
@@ -138,6 +139,33 @@ export class AdminController {
     }
   }
 
+  // Placeholder signatures for methods mentioned in original tsc errors
+  // Ensure these also have the correct return type
+  static async getAllUsers(req: Request, res: Response): Promise<Response | void> {
+    // TODO: Implement
+    return res.status(501).json({ message: 'Not implemented' });
+  }
+
+  static async getUserById(req: Request, res: Response): Promise<Response | void> {
+    // TODO: Implement
+    return res.status(501).json({ message: 'Not implemented' });
+  }
+
+  static async updateUser(req: Request, res: Response): Promise<Response | void> {
+    // TODO: Implement
+    return res.status(501).json({ message: 'Not implemented' });
+  }
+
+  static async deleteUser(req: Request, res: Response): Promise<Response | void> {
+    // TODO: Implement
+    return res.status(501).json({ message: 'Not implemented' });
+  }
+
+  static async searchUsers(req: Request, res: Response): Promise<Response | void> {
+    // TODO: Implement
+    return res.status(501).json({ message: 'Not implemented' });
+  }
+
   // Tạo tài khoản admin đầu tiên (chỉ khi chưa có admin nào)
   static async createFirstAdmin(req: Request, res: Response): Promise<Response | void> {
     try {
@@ -213,7 +241,7 @@ export class AdminController {
       // Loại bỏ mật khẩu trước khi trả về
       const { password: _, ...userData } = newUser;
       
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message: 'Tạo tài khoản admin đầu tiên thành công',
         data: { 
