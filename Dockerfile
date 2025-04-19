@@ -1,5 +1,5 @@
 # Use an official Node.js runtime (Debian-based slim version for glibc compatibility)
-FROM node:18-slim AS builder
+FROM node:20-slim AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # --- Production Stage ---
-FROM node:18-slim
+FROM node:20-slim
 
 WORKDIR /app
 
