@@ -1,44 +1,20 @@
 version: '3.8'
 
 services:
-  traefik:
-    image: "traefik:v2.10"
-    container_name: "traefik_mb_bank"
-    command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencrypt.acme.email=email@your-domain.com" # !!! REPLACE EMAIL !!!
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-      # Uncomment for Dashboard (access on :8080 or secure it)
-      # - "--api.insecure=true"
-      # - "--api.dashboard=true"
-    ports:
-      - "80:80"
-      - "443:443"
-      # - "8080:8080" # Expose dashboard if enabled
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt"
-    networks:
-      - proxy
-    restart: unless-stopped
+  # Traefik service removed - assuming one is already running externally
 
   db:
     image: mysql:8.0
-    container_name: mysql_db
+    container_name: mysql_db # Consider a more specific name like mb_bank_mysql_db
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD} # From .env
-      MYSQL_DATABASE: ${DB_NAME}             # From .env
-      MYSQL_USER: ${DB_USER}                 # From .env
-      MYSQL_PASSWORD: ${DB_PASSWORD}           # From .env
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - internal
+      - internal # db only needs internal communication
     restart: unless-stopped
 
   app:
@@ -51,29 +27,38 @@ services:
     environment:
       NODE_ENV: production
       PORT: ${PORT:-3000}
-      DB_HOST: db # Service name from docker-compose
-      DB_PORT: 3306 # Default MySQL port
+      DB_HOST: db
+      DB_PORT: 3306
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-      JWT_SECRET: ${JWT_SECRET} # Add other necessary env vars from your .env
+      JWT_SECRET: ${JWT_SECRET}
     networks:
-      - internal
-      - proxy
+      - internal # For communication with the db
+      - proxy_network # Connect to the existing external Traefik network (!!! REPLACE IF NEEDED !!!)
     labels:
+      # These labels are for the *existing* external Traefik
       - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`your-domain.com`)" # !!! REPLACE DOMAIN !!!
-      - "traefik.http.routers.app.entrypoints=websecure"
-      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
-      - "traefik.http.services.app.loadbalancer.server.port=${PORT:-3000}"
+      # Ensure this domain points to your VPS IP
+      - "traefik.http.routers.mb-bank-app.rule=Host(`pm.danhtrong.com`)" # !!! REPLACE DOMAIN !!!
+      - "traefik.http.routers.mb-bank-app.entrypoints=websecure" # Use the HTTPS entrypoint
+      - "traefik.http.routers.mb-bank-app.tls.certresolver=letsencrypt" # Use the cert resolver configured in your main Traefik
+      # Make sure the port matches the EXPOSE port in your Dockerfile and the PORT env var
+      - "traefik.http.services.mb-bank-app.loadbalancer.server.port=${PORT:-3000}"
+      # Add network label to explicitly tell Traefik which network to use for this app
+      - "traefik.docker.network=proxy_network" # !!! REPLACE WITH YOUR ACTUAL TRAEFIK NETWORK NAME !!!
     restart: unless-stopped
 
 networks:
-  proxy:
-    name: proxy_network
+  # This network is created by this compose file for app <-> db communication
   internal:
-    name: internal_network
-    internal: true # Containers on this network cannot be accessed from outside
+    name: mb_bank_internal_network
+    internal: true
+
+  # This network connects to the existing Traefik network
+  proxy_network: # !!! REPLACE WITH YOUR ACTUAL TRAEFIK NETWORK NAME !!!
+    external: true
+    name: proxy_network # !!! Sometimes needed, ensure this matches the actual external network name !!!
 
 volumes:
   mysql_data:
