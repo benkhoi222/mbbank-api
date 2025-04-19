@@ -4,9 +4,21 @@ import { UserModel } from '../models/user.model';
 import { MBBankService } from '../services/mbbank.service';
 import { NotFoundError, UnauthorizedError } from '../utils/error.utils';
 
+type UserRole = 'admin' | 'user';
+type UserStatus = 'active' | 'inactive' | 'locked';
+interface UserInput {
+  username: string;
+  password?: string; // Password might not always be needed as input directly
+  name?: string;
+  email?: string;
+  role: UserRole;
+  status: UserStatus;
+  token: string;
+}
+
 export class AdminController {
   // Lấy tất cả tài khoản MB Bank (chỉ admin)
-  static async getAllMBAccounts(req: Request, res: Response): Promise<void> {
+  static async getAllMBAccounts(req: Request, res: Response): Promise<Response | void> {
     try {
       // Kiểm tra quyền admin
       if (!req.user || req.user.role !== 'admin') {
@@ -34,7 +46,7 @@ export class AdminController {
   }
 
   // Kiểm tra trạng thái đăng nhập của tất cả tài khoản (chỉ admin)
-  static async checkAllAccountsStatus(req: Request, res: Response): Promise<void> {
+  static async checkAllAccountsStatus(req: Request, res: Response): Promise<Response | void> {
     try {
       // Kiểm tra quyền admin
       if (!req.user || req.user.role !== 'admin') {
@@ -81,7 +93,7 @@ export class AdminController {
   }
 
   // Kiểm tra số dư của tất cả tài khoản (chỉ admin)
-  static async checkAllAccountsBalance(req: Request, res: Response): Promise<void> {
+  static async checkAllAccountsBalance(req: Request, res: Response): Promise<Response | void> {
     try {
       // Kiểm tra quyền admin
       if (!req.user || req.user.role !== 'admin') {
@@ -127,7 +139,7 @@ export class AdminController {
   }
 
   // Tạo tài khoản admin đầu tiên (chỉ khi chưa có admin nào)
-  static async createFirstAdmin(req: Request, res: Response): Promise<void> {
+  static async createFirstAdmin(req: Request, res: Response): Promise<Response | void> {
     try {
       // Kiểm tra xem đã có admin nào chưa
       const hasAdmin = await UserModel.hasAdminUser();
@@ -186,13 +198,13 @@ export class AdminController {
       const token = generateAccountToken(username);
       
       // Tạo người dùng admin đầu tiên
-      const newUser = {
+      const newUser: UserInput = {
         username,
         password: hashedPassword,
-        name,
+        name: name || '', // Ensure name is provided, even if empty
         email,
-        role: 'admin',
-        status: 'active',
+        role: 'admin', // This now correctly matches UserRole
+        status: 'active', // This matches UserStatus
         token
       };
       
@@ -216,7 +228,7 @@ export class AdminController {
         }
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         message: error.message || 'Lỗi khi tạo tài khoản admin'
       });
