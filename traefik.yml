@@ -1,0 +1,33 @@
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+
+providers:
+  docker:
+    exposedByDefault: false
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: email@your-domain.com # !!! REPLACE WITH YOUR EMAIL !!!
+      storage: acme.json
+      httpChallenge:
+        entryPoint: web
+
+# Enable API and Dashboard (optional, access via port 8080 or secure it)
+# api:
+#   insecure: true
+#   dashboard: true 

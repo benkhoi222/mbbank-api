@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: "traefik:v2.10"
+    container_name: "traefik"
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=email@your-domain.com" # !!! REPLACE EMAIL !!!
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # Uncomment for Dashboard (access on :8080 or secure it)
+      # - "--api.insecure=true"
+      # - "--api.dashboard=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      # - "8080:8080" # Expose dashboard if enabled
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD} # From .env
+      MYSQL_DATABASE: ${DB_NAME}             # From .env
+      MYSQL_USER: ${DB_USER}                 # From .env
+      MYSQL_PASSWORD: ${DB_PASSWORD}           # From .env
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - internal
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mb_bank_app
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-3000}
+      DB_HOST: db # Service name from docker-compose
+      DB_PORT: 3306 # Default MySQL port
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET} # Add other necessary env vars from your .env
+    networks:
+      - internal
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`your-domain.com`)" # !!! REPLACE DOMAIN !!!
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      - "traefik.http.services.app.loadbalancer.server.port=${PORT:-3000}"
+    restart: unless-stopped
+
+networks:
+  proxy:
+    name: proxy_network
+  internal:
+    name: internal_network
+    internal: true # Containers on this network cannot be accessed from outside
+
+volumes:
+  mysql_data:
+    driver: local 
