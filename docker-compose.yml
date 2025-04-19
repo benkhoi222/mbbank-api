@@ -3,7 +3,7 @@ version: '3.8'
 services:
   traefik:
     image: "traefik:v2.10"
-    container_name: "traefik"
+    container_name: "traefik_mb_bank"
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
